@@ -33,12 +33,12 @@ pub fn cmd<'a, 'b>() -> App<'a, 'b> {
         .arg(
             Arg::with_name(INCREASE_ARG_NAME)
                 .default_value("auto")
-                .validator(validate_increment)
+                .validator(validate_increment_arg)
                 .help("major|minor|patch|auto"),
         )
 }
 
-fn validate_increment(s: String) -> Result<(), String> {
+fn validate_increment_arg(s: String) -> Result<(), String> {
     Increment::try_from(s.as_str()).map(|_| ())
 }
 
@@ -46,4 +46,38 @@ pub fn exec(sub_matches: &ArgMatches) {
     let increment = sub_matches.value_of("increment").unwrap();
 
     println!("Version type: {}", increment);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    macro_rules! test_validation_ok {
+        ( $name:ident, $s:expr) => {
+            #[test]
+            fn $name() {
+                let arg = String::from($s);
+                let result = validate_increment_arg(arg);
+                assert!(result.is_ok());
+            }
+        }
+    }
+
+    macro_rules! test_validation_fail {
+        ( $name:ident, $s:expr) => {
+            #[test]
+            fn $name() {
+                let arg = String::from($s);
+                let result = validate_increment_arg(arg);
+                assert!(result.is_err());
+            }
+        }
+    }
+
+    test_validation_ok!(major_works, "major");
+    test_validation_ok!(minor_works, "minor");
+    test_validation_ok!(patch_works, "patch");
+    test_validation_ok!(auto_works, "auto");
+
+    test_validation_fail!(bogus_does_not_work, "bogus");
 }
