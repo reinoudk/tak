@@ -1,5 +1,10 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
+use git2::Repository;
+use semver::Version;
+use std::cmp;
 use std::convert::TryFrom;
+use std::io::Error;
+use std::path::Path;
 
 pub const CMD_NAME: &'static str = "increment";
 const INCREASE_ARG_NAME: &'static str = "increment";
@@ -42,10 +47,63 @@ fn validate_increment_arg(s: String) -> Result<(), String> {
     Increment::try_from(s.as_str()).map(|_| ())
 }
 
-pub fn exec(sub_matches: &ArgMatches) {
+pub fn exec(sub_matches: &ArgMatches, mut out: impl std::io::Write) -> Result<(), Error> {
     let increment = sub_matches.value_of("increment").unwrap();
+    let increment = Increment::try_from(increment).unwrap();
 
-    println!("Version type: {}", increment);
+    let current_dir = std::env::current_dir()?;
+    let repo = Repository::open(current_dir).unwrap();
+
+    let current_version = highest_tag(&repo).unwrap();
+    let current_version = current_version.unwrap();
+
+    let mut new_version = current_version.clone();
+
+    match increment {
+        Increment::MAJOR => new_version.increment_major(),
+        Increment::MINOR => new_version.increment_minor(),
+        Increment::PATCH => new_version.increment_patch(),
+        _ => (),
+    };
+
+    let new_version = new_version.to_string();
+
+    out.write_all(new_version.as_bytes())
+}
+
+fn highest_tag(repo: &Repository) -> Result<Option<Version>, git2::Error> {
+    // let head = repo.head()?;
+
+    let initial_version: Option<Version> = None;
+
+    let version = repo
+        .tag_names(None)?
+        .iter()
+        .filter_map(|s| s)
+        .map(|s| s)
+        .filter_map(|s| Version::parse(s).ok())
+        .fold(
+            initial_version,
+            |state: Option<Version>, version: Version| match (state, version) {
+                (Some(state), version) => Some(cmp::max(state, version)),
+                (None, version) => Some(version),
+            },
+        );
+
+    Ok(version)
+}
+
+fn _info_tag_or_commit(repo: Repository, version: Option<Version>) -> Result<(), git2::Error>{
+    if let Some(version) = version {
+        let obj = repo.revparse_single(&version.to_string())?;
+
+        if let Some(tag) = obj.as_tag() {
+            println!("Test Tag: {} ({})", tag.name().unwrap(), version)
+        } else if let Some(commit) = obj.as_commit() {
+            println!("Test Commit: {} ({})", commit.id().to_string(), version)
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -60,7 +118,7 @@ mod tests {
                 let result = validate_increment_arg(arg);
                 assert!(result.is_ok());
             }
-        }
+        };
     }
 
     macro_rules! test_validation_fail {
@@ -71,7 +129,7 @@ mod tests {
                 let result = validate_increment_arg(arg);
                 assert!(result.is_err());
             }
-        }
+        };
     }
 
     test_validation_ok!(major_works, "major");
@@ -80,4 +138,15 @@ mod tests {
     test_validation_ok!(auto_works, "auto");
 
     test_validation_fail!(bogus_does_not_work, "bogus");
+
+    macro_rules! test_exec {
+        ( $name:ident, $increment:expr, $version:expr, $expect:expr) => {
+            #[test]
+            fn some$name_() {
+                let result = increment_version($increment, $version)
+                assert!(result.is_ok());
+                assert_eq!(result.unwrap(), $expected);
+            }
+        }
+    }
 }
