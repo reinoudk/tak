@@ -1,10 +1,10 @@
-use clap::{App, Arg, ArgMatches, SubCommand};
-use git2::Repository;
-use semver::Version;
 use std::cmp;
 use std::convert::TryFrom;
 use std::io::Error;
-use std::path::Path;
+
+use clap::{App, Arg, ArgMatches, SubCommand};
+use git2::Repository;
+use semver::Version;
 
 pub const CMD_NAME: &'static str = "increment";
 const INCREASE_ARG_NAME: &'static str = "increment";
@@ -121,6 +121,11 @@ mod tests {
         };
     }
 
+    test_validation_ok!(major_works, "major");
+    test_validation_ok!(minor_works, "minor");
+    test_validation_ok!(patch_works, "patch");
+    test_validation_ok!(auto_works, "auto");
+
     macro_rules! test_validation_fail {
         ( $name:ident, $s:expr) => {
             #[test]
@@ -132,21 +137,5 @@ mod tests {
         };
     }
 
-    test_validation_ok!(major_works, "major");
-    test_validation_ok!(minor_works, "minor");
-    test_validation_ok!(patch_works, "patch");
-    test_validation_ok!(auto_works, "auto");
-
     test_validation_fail!(bogus_does_not_work, "bogus");
-
-    macro_rules! test_exec {
-        ( $name:ident, $increment:expr, $version:expr, $expect:expr) => {
-            #[test]
-            fn some$name_() {
-                let result = increment_version($increment, $version)
-                assert!(result.is_ok());
-                assert_eq!(result.unwrap(), $expected);
-            }
-        }
-    }
 }

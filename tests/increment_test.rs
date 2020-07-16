@@ -1,8 +1,9 @@
-use assert_cmd::prelude::*;
-use git2::{Repository, Signature, Time};
 use std::env;
 use std::process::Command;
 use std::time::Duration;
+
+use assert_cmd::prelude::*;
+use git2::{Repository, Signature, Time};
 
 #[test]
 fn test_increment() -> Result<(), Box<dyn std::error::Error>> {
@@ -36,6 +37,16 @@ fn test_increment() -> Result<(), Box<dyn std::error::Error>> {
     cmd.current_dir(tmp_dir.path());
     cmd.arg("increment").arg("patch");
     cmd.assert().success().stdout("1.0.1");
+
+    let mut cmd = Command::cargo_bin("tak")?;
+    cmd.current_dir(tmp_dir.path());
+    cmd.arg("increment").arg("minor");
+    cmd.assert().success().stdout("1.1.0");
+
+    let mut cmd = Command::cargo_bin("tak")?;
+    cmd.current_dir(tmp_dir.path());
+    cmd.arg("increment").arg("major");
+    cmd.assert().success().stdout("2.0.0");
 
     // explicitly close tmp_dir so we are notified if it doesn't work
     tmp_dir.close()?;
