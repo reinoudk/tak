@@ -72,8 +72,6 @@ pub fn exec(sub_matches: &ArgMatches, mut out: impl std::io::Write) -> Result<()
 }
 
 fn highest_tag(repo: &Repository) -> Result<Option<Version>, git2::Error> {
-    // let head = repo.head()?;
-
     let initial_version: Option<Version> = None;
 
     let version = repo
@@ -92,7 +90,7 @@ fn highest_tag(repo: &Repository) -> Result<Option<Version>, git2::Error> {
     Ok(version)
 }
 
-fn _info_tag_or_commit(repo: Repository, version: Option<Version>) -> Result<(), git2::Error>{
+fn _info_tag_or_commit(repo: Repository, version: Option<Version>) -> Result<(), git2::Error> {
     if let Some(version) = version {
         let obj = repo.revparse_single(&version.to_string())?;
 

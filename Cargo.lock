@@ -422,7 +422,9 @@ dependencies = [
  "assert_cmd",
  "clap",
  "git2",
+ "lazy_static",
  "predicates",
+ "regex",
  "semver",
  "tempfile",
 ]

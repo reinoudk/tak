@@ -1,7 +1,11 @@
+#[macro_use]
+extern crate lazy_static;
+
 use clap::{App, AppSettings};
 use std::io::Error;
 
 mod increment;
+mod semantic;
 
 fn main() -> Result<(), Error> {
     // set up basic cli arguments
