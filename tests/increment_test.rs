@@ -1,6 +1,5 @@
 use std::env;
 use std::process::Command;
-use std::time::Duration;
 
 use assert_cmd::prelude::*;
 use git2::{Repository, Signature, Time};
@@ -29,9 +28,9 @@ fn test_increment() -> Result<(), Box<dyn std::error::Error>> {
         &[],
     )?;
 
-    repo.tag_lightweight("1.0", &repo.find_object(oid, None)?, false);
-    repo.tag_lightweight("1.0.0", &repo.find_object(oid, None)?, false);
-    repo.tag_lightweight("2", &repo.find_object(oid, None)?, false);
+    repo.tag_lightweight("1.0", &repo.find_object(oid, None)?, false)?;
+    repo.tag_lightweight("1.0.0", &repo.find_object(oid, None)?, false)?;
+    repo.tag_lightweight("2", &repo.find_object(oid, None)?, false)?;
 
     let mut cmd = Command::cargo_bin("tak")?;
     cmd.current_dir(tmp_dir.path());

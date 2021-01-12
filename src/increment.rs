@@ -80,12 +80,11 @@ fn highest_tag(repo: &Repository) -> Result<Option<Version>, git2::Error> {
         .tag_names(None)?
         .iter()
         .filter_map(|s| s)
-        .map(|s| s)
         .filter_map(|s| Version::parse(s).ok())
         .fold(
             initial_version,
-            |state: Option<Version>, version: Version| match (state, version) {
-                (Some(state), version) => Some(cmp::max(state, version)),
+            |highest: Option<Version>, version: Version| match (highest, version) {
+                (Some(highest), version) => Some(cmp::max(highest, version)),
                 (None, version) => Some(version),
             },
         );
