@@ -28,8 +28,9 @@ fn test_increment() -> Result<(), Box<dyn std::error::Error>> {
         &[],
     )?;
 
-    repo.tag_lightweight("1.0", &repo.find_object(oid, None)?, false)?;
+    // Only consider SemVer versions
     repo.tag_lightweight("1.0.0", &repo.find_object(oid, None)?, false)?;
+    repo.tag_lightweight("1.1", &repo.find_object(oid, None)?, false)?;
     repo.tag_lightweight("2", &repo.find_object(oid, None)?, false)?;
 
     let mut cmd = Command::cargo_bin("tak")?;
@@ -46,6 +47,25 @@ fn test_increment() -> Result<(), Box<dyn std::error::Error>> {
     cmd.current_dir(tmp_dir.path());
     cmd.arg("increment").arg("major");
     cmd.assert().success().stdout("2.0.0");
+
+    // Check auto increment
+    let mut index = repo.index()?;
+    let tree_id = index.write_tree()?;
+    let tree = repo.find_tree(tree_id)?;
+    let parent_commit = repo.head().unwrap().peel_to_commit().unwrap();
+    repo.commit(
+    Some("HEAD"),
+        &committer,
+        &committer,
+        "feat: some feature",
+        &tree,
+        &[&parent_commit],
+    )?;
+
+    let mut cmd = Command::cargo_bin("tak")?;
+    cmd.current_dir(tmp_dir.path());
+    cmd.arg("increment");
+    cmd.assert().success().stdout("1.1.0");
 
     // explicitly close tmp_dir so we are notified if it doesn't work
     tmp_dir.close()?;

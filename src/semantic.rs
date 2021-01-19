@@ -4,15 +4,21 @@ use semver::Version;
 use std::cmp;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Debug)]
-enum Increment {
+pub enum Increment {
     NONE,
     PATCH,
     MINOR,
     MAJOR,
 }
 
-fn max_semantic_increment(messages: Vec<&str>) -> Increment {
-    let increment = messages.into_iter().fold(Increment::NONE, |acc, message| {
+pub fn increment(repo: &Repository, version: Version) -> Increment {
+    let commits = commits_since_version(repo, version).unwrap();
+    let messages = commits.iter().filter_map(Commit::message);
+    max_semantic_increment(messages)
+}
+
+fn max_semantic_increment<'a, I: Iterator<Item = &'a str>>(messages: I) -> Increment {
+    let increment = messages.fold(Increment::NONE, |acc, message| {
         let increment = semantic_increment(message);
 
         // return the biggest increment type
@@ -58,10 +64,8 @@ fn semantic_increment(message: &str) -> Increment {
 }
 
 fn commits_since_version(repo: &Repository, version: Version) -> Result<Vec<Commit>, git2::Error> {
-    let tag = format!("v{}", version);
-
     let mut walk = repo.revwalk().unwrap();
-    walk.push_range(&format!("{}..HEAD", tag))?;
+    walk.push_range(&format!("{}..HEAD", version))?;
     let commits: Vec<Commit> = walk
         .filter_map(Result::ok)
         .map(|oid| {

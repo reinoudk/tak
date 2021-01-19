@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate lazy_static;
 
-use clap::{App, AppSettings};
+use clap::{crate_version, App, AppSettings};
 use std::io::Error;
 
 mod increment;
@@ -11,7 +11,7 @@ fn main() -> Result<(), Error> {
     // set up basic cli arguments
     let app = App::new("tak")
         .setting(AppSettings::ArgRequiredElseHelp)
-        .version("1.0")
+        .version(crate_version!())
         .about("A Git tag helper.");
 
     // add increment command

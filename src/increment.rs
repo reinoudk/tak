@@ -6,25 +6,28 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use git2::Repository;
 use semver::Version;
 
+use crate::semantic;
+
 pub const CMD_NAME: &'static str = "increment";
+pub const CMD_ALIASES: &'static [&'static str] = &["inc"];
 const INCREASE_ARG_NAME: &'static str = "increment";
 
-enum Increment {
+enum IncrementArg {
     PATCH,
     MINOR,
     MAJOR,
     AUTO,
 }
 
-impl TryFrom<&str> for Increment {
+impl TryFrom<&str> for IncrementArg {
     type Error = String;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
-            "patch" => Ok(Increment::PATCH),
-            "minor" => Ok(Increment::MINOR),
-            "major" => Ok(Increment::MAJOR),
-            "auto" => Ok(Increment::AUTO),
+            "patch" => Ok(IncrementArg::PATCH),
+            "minor" => Ok(IncrementArg::MINOR),
+            "major" => Ok(IncrementArg::MAJOR),
+            "auto" => Ok(IncrementArg::AUTO),
             _ => Err(String::from(
                 "increment should be one of [patch, minor, major, auto]",
             )),
@@ -34,6 +37,7 @@ impl TryFrom<&str> for Increment {
 
 pub fn cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_NAME)
+        .aliases(CMD_ALIASES)
         .about("create a release")
         .arg(
             Arg::with_name(INCREASE_ARG_NAME)
@@ -44,12 +48,12 @@ pub fn cmd<'a, 'b>() -> App<'a, 'b> {
 }
 
 fn validate_increment_arg(s: String) -> Result<(), String> {
-    Increment::try_from(s.as_str()).map(|_| ())
+    IncrementArg::try_from(s.as_str()).map(|_| ())
 }
 
 pub fn exec(sub_matches: &ArgMatches, mut out: impl std::io::Write) -> Result<(), Error> {
     let increment = sub_matches.value_of("increment").unwrap();
-    let increment = Increment::try_from(increment).unwrap();
+    let increment = IncrementArg::try_from(increment).unwrap();
 
     let current_dir = std::env::current_dir()?;
     let repo = Repository::open(current_dir).unwrap();
@@ -60,10 +64,18 @@ pub fn exec(sub_matches: &ArgMatches, mut out: impl std::io::Write) -> Result<()
     let mut new_version = current_version.clone();
 
     match increment {
-        Increment::MAJOR => new_version.increment_major(),
-        Increment::MINOR => new_version.increment_minor(),
-        Increment::PATCH => new_version.increment_patch(),
-        _ => (),
+        IncrementArg::MAJOR => new_version.increment_major(),
+        IncrementArg::MINOR => new_version.increment_minor(),
+        IncrementArg::PATCH => new_version.increment_patch(),
+        IncrementArg::AUTO => {
+            let inc = semantic::increment(&repo, current_version);
+            match inc {
+                semantic::Increment::NONE => (),
+                semantic::Increment::MAJOR => new_version.increment_major(),
+                semantic::Increment::MINOR => new_version.increment_minor(),
+                semantic::Increment::PATCH => new_version.increment_patch(),
+            }
+        },
     };
 
     let new_version = new_version.to_string();
@@ -106,6 +118,8 @@ fn _info_tag_or_commit(repo: Repository, version: Option<Version>) -> Result<(),
 #[cfg(test)]
 mod tests {
     use super::*;
+
+
 
     macro_rules! test_validation_ok {
         ( $name:ident, $s:expr) => {
