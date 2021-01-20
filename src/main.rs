@@ -11,7 +11,7 @@ fn main() {
         .version(crate_version!())
         .about("A Git tag helper.");
 
-    // add increment command
+    // add next command
     let app = app.subcommand(next::cmd());
 
     let matches = app.get_matches();
