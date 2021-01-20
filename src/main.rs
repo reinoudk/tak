@@ -1,10 +1,10 @@
 use clap::{crate_version, App, AppSettings};
 
-use cmd::increment;
+use cmd::next;
 
 mod cmd;
 
-fn main() -> Result<(), String> {
+fn main() {
     // set up basic cli arguments
     let app = App::new("tak")
         .setting(AppSettings::ArgRequiredElseHelp)
@@ -12,14 +12,15 @@ fn main() -> Result<(), String> {
         .about("A Git tag helper.");
 
     // add increment command
-    let app = app.subcommand(increment::cmd());
+    let app = app.subcommand(next::cmd());
 
     let matches = app.get_matches();
-    let out = &mut std::io::stdout();
 
-    match matches.subcommand() {
-        (increment::CMD_NAME, Some(sub_matches)) => increment::exec(sub_matches, out),
+    if let Err(err) = match matches.subcommand() {
+        (next::CMD_NAME, Some(sub_matches)) => next::exec(sub_matches),
         _ => Ok(()),
+    } {
+        eprintln!("{}", err.to_string());
     }
-    .map_err(|err| err.to_string())
+
 }

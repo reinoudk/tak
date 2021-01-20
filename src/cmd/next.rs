@@ -6,15 +6,14 @@ use tak::error::Result;
 use tak::git::SemanticRepository;
 use tak::increment::Increment;
 
-pub const CMD_NAME: &'static str = "increment";
-pub const CMD_ALIASES: &'static [&'static str] = &["inc"];
-const INCREMENT_ARG_NAME: &'static str = "increment";
+pub const CMD_NAME: &'static str = "next";
+pub const INCREMENT_ARG_NAME: &'static str = "increment";
 
 enum IncrementArg {
     PATCH,
     MINOR,
     MAJOR,
-    AUTO,
+    CONVENTIONAL,
 }
 
 impl TryFrom<&str> for IncrementArg {
@@ -25,7 +24,7 @@ impl TryFrom<&str> for IncrementArg {
             "patch" => Ok(IncrementArg::PATCH),
             "minor" => Ok(IncrementArg::MINOR),
             "major" => Ok(IncrementArg::MAJOR),
-            "auto" => Ok(IncrementArg::AUTO),
+            "conventional" => Ok(IncrementArg::CONVENTIONAL),
             _ => Err(String::from(
                 "increment should be one of [patch, minor, major, auto]",
             )),
@@ -35,13 +34,12 @@ impl TryFrom<&str> for IncrementArg {
 
 pub fn cmd<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name(CMD_NAME)
-        .aliases(CMD_ALIASES)
-        .about("create a release")
+        .about("show the next version")
         .arg(
             Arg::with_name(INCREMENT_ARG_NAME)
-                .default_value("auto")
+                .default_value("conventional")
                 .validator(validate_increment_arg)
-                .help("major|minor|patch|auto"),
+                .help("major|minor|patch|conventional"),
         )
 }
 
@@ -49,22 +47,22 @@ fn validate_increment_arg(s: String) -> std::result::Result<(), String> {
     IncrementArg::try_from(s.as_str()).and(Ok(()))
 }
 
-pub fn exec(sub_matches: &ArgMatches, mut out: impl std::io::Write) -> Result<()> {
-    let increment_arg = sub_matches.value_of("increment").unwrap();
-    let increment_arg = IncrementArg::try_from(increment_arg).unwrap();
+pub fn exec(sub_matches: &ArgMatches) -> Result<()> {
+    // Unwrapping should always succeed: the increment argument has a default value and is validated
+    let increment_arg = sub_matches.value_of(INCREMENT_ARG_NAME).unwrap();
+    let increment = IncrementArg::try_from(increment_arg).unwrap();
 
-    let repo = SemanticRepository::open().unwrap();
+    let repo = SemanticRepository::open()?;
 
-    let new_version = match increment_arg {
+    let new_version = match increment {
         IncrementArg::MAJOR => repo.next_version(Increment::MAJOR),
         IncrementArg::MINOR => repo.next_version(Increment::MINOR),
         IncrementArg::PATCH => repo.next_version(Increment::PATCH),
-        IncrementArg::AUTO => repo.automatic_next_version(),
+        IncrementArg::CONVENTIONAL => repo.automatic_next_version(),
     };
 
-    let new_version = new_version?.to_string();
-
-    Ok(out.write_all(new_version.as_bytes())?)
+    println!("{}", new_version?.to_string());
+    Ok(())
 }
 
 #[cfg(test)]

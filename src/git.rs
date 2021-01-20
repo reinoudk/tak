@@ -38,12 +38,12 @@ impl SemanticRepository {
     }
 
     fn commits_since(&self, version: Version) -> Result<Vec<Commit>> {
-        let mut walk = self.repository.revwalk().unwrap();
+        let mut walk = self.repository.revwalk()?;
         walk.push_range(&format!("{}..HEAD", version))?;
         let commits: Vec<Commit> = walk
             .filter_map(std::result::Result::ok)
-            .map(|oid| {
-                return self.repository.find_commit(oid).unwrap();
+            .filter_map(|oid| {
+                return self.repository.find_commit(oid).ok();
             })
             .collect();
 
@@ -68,7 +68,7 @@ impl SemanticRepository {
     pub fn automatic_next_version(&self) -> Result<Version> {
         let current_version = self.highest_version()?;
 
-        let commits = self.commits_since(current_version).unwrap();
+        let commits = self.commits_since(current_version)?;
         let messages = commits.iter().filter_map(Commit::message);
         let increment = conventional_commits::max_semantic_increment(messages);
 

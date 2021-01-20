@@ -5,7 +5,7 @@ use assert_cmd::prelude::*;
 use git2::{Repository, Signature, Time};
 
 #[test]
-fn test_increment() -> Result<(), Box<dyn std::error::Error>> {
+fn test_next() -> Result<(), Box<dyn std::error::Error>> {
     let tmp_dir = tempfile::tempdir_in(env::current_dir()?).unwrap();
 
     let repo = match Repository::init(tmp_dir.path()) {
@@ -35,18 +35,18 @@ fn test_increment() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut cmd = Command::cargo_bin("tak")?;
     cmd.current_dir(tmp_dir.path());
-    cmd.arg("increment").arg("patch");
-    cmd.assert().success().stdout("1.0.1");
+    cmd.arg("next").arg("patch");
+    cmd.assert().success().stdout("1.0.1\n");
 
     let mut cmd = Command::cargo_bin("tak")?;
     cmd.current_dir(tmp_dir.path());
-    cmd.arg("increment").arg("minor");
-    cmd.assert().success().stdout("1.1.0");
+    cmd.arg("next").arg("minor");
+    cmd.assert().success().stdout("1.1.0\n");
 
     let mut cmd = Command::cargo_bin("tak")?;
     cmd.current_dir(tmp_dir.path());
-    cmd.arg("increment").arg("major");
-    cmd.assert().success().stdout("2.0.0");
+    cmd.arg("next").arg("major");
+    cmd.assert().success().stdout("2.0.0\n");
 
     // Check auto increment
     let mut index = repo.index()?;
@@ -64,8 +64,8 @@ fn test_increment() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut cmd = Command::cargo_bin("tak")?;
     cmd.current_dir(tmp_dir.path());
-    cmd.arg("increment");
-    cmd.assert().success().stdout("1.1.0");
+    cmd.arg("next");
+    cmd.assert().success().stdout("1.1.0\n");
 
     // explicitly close tmp_dir so we are notified if it doesn't work
     tmp_dir.close()?;
