@@ -1,23 +1,10 @@
-use git2::{Commit, Repository};
-use regex::Regex;
-use semver::Version;
 use std::cmp;
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Debug)]
-pub enum Increment {
-    NONE,
-    PATCH,
-    MINOR,
-    MAJOR,
-}
+use regex::Regex;
 
-pub fn increment(repo: &Repository, version: Version) -> Increment {
-    let commits = commits_since_version(repo, version).unwrap();
-    let messages = commits.iter().filter_map(Commit::message);
-    max_semantic_increment(messages)
-}
+use crate::increment::Increment;
 
-fn max_semantic_increment<'a, I: Iterator<Item = &'a str>>(messages: I) -> Increment {
+pub fn max_semantic_increment<'a, I: Iterator<Item = &'a str>>(messages: I) -> Increment {
     let increment = messages.fold(Increment::NONE, |acc, message| {
         let increment = semantic_increment(message);
 
@@ -61,19 +48,6 @@ fn semantic_increment(message: &str) -> Increment {
         }
     }
     increment
-}
-
-fn commits_since_version(repo: &Repository, version: Version) -> Result<Vec<Commit>, git2::Error> {
-    let mut walk = repo.revwalk().unwrap();
-    walk.push_range(&format!("{}..HEAD", version))?;
-    let commits: Vec<Commit> = walk
-        .filter_map(Result::ok)
-        .map(|oid| {
-            return repo.find_commit(oid).unwrap();
-        })
-        .collect();
-
-    Ok(commits)
 }
 
 #[cfg(test)]

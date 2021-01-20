@@ -1,13 +1,10 @@
-#[macro_use]
-extern crate lazy_static;
-
 use clap::{crate_version, App, AppSettings};
-use std::io::Error;
 
-mod increment;
-mod semantic;
+use cmd::increment;
 
-fn main() -> Result<(), Error> {
+mod cmd;
+
+fn main() -> Result<(), String> {
     // set up basic cli arguments
     let app = App::new("tak")
         .setting(AppSettings::ArgRequiredElseHelp)
@@ -24,4 +21,5 @@ fn main() -> Result<(), Error> {
         (increment::CMD_NAME, Some(sub_matches)) => increment::exec(sub_matches, out),
         _ => Ok(()),
     }
+    .map_err(|err| err.to_string())
 }

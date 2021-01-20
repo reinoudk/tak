@@ -54,7 +54,7 @@ fn test_increment() -> Result<(), Box<dyn std::error::Error>> {
     let tree = repo.find_tree(tree_id)?;
     let parent_commit = repo.head().unwrap().peel_to_commit().unwrap();
     repo.commit(
-    Some("HEAD"),
+        Some("HEAD"),
         &committer,
         &committer,
         "feat: some feature",
