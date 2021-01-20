@@ -59,7 +59,7 @@ impl SemanticRepository {
             Increment::MAJOR => new_version.increment_major(),
             Increment::MINOR => new_version.increment_minor(),
             Increment::PATCH => new_version.increment_patch(),
-            Increment::NONE => (),
+            Increment::NONE => return Err(Error::NoVersionChange)
         };
 
         Ok(new_version)

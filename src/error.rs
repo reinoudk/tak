@@ -8,14 +8,16 @@ pub enum Error {
     Io(io::Error),
     Git(git2::Error),
     NoTagFound,
+    NoVersionChange,
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match *self {
-            Self::Io(ref err) => write!(f, "IO Error: {}", err),
-            Self::Git(ref err) => write!(f, "Git Error: {}", err),
+            Self::Io(ref err) => write!(f, "IO: {}", err),
+            Self::Git(ref err) => write!(f, "Git: {}", err),
             Self::NoTagFound => write!(f, "No valid tag found"),
+            Self::NoVersionChange => write!(f, "No change in version"),
         }
     }
 }

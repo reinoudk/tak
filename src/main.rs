@@ -20,7 +20,7 @@ fn main() {
         (next::CMD_NAME, Some(sub_matches)) => next::exec(sub_matches),
         _ => Ok(()),
     } {
-        eprintln!("{}", err.to_string());
+        eprintln!("Error: {}", err.to_string());
     }
 
 }
