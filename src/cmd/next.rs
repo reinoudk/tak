@@ -13,7 +13,7 @@ enum IncrementArg {
     PATCH,
     MINOR,
     MAJOR,
-    CONVENTIONAL,
+    AUTO,
 }
 
 impl TryFrom<&str> for IncrementArg {
@@ -24,7 +24,7 @@ impl TryFrom<&str> for IncrementArg {
             "patch" => Ok(IncrementArg::PATCH),
             "minor" => Ok(IncrementArg::MINOR),
             "major" => Ok(IncrementArg::MAJOR),
-            "conventional" => Ok(IncrementArg::CONVENTIONAL),
+            "auto" => Ok(IncrementArg::AUTO),
             _ => Err(String::from(
                 "increment should be one of [patch, minor, major, auto]",
             )),
@@ -37,9 +37,9 @@ pub fn cmd<'a, 'b>() -> App<'a, 'b> {
         .about("show the next version")
         .arg(
             Arg::with_name(INCREMENT_ARG_NAME)
-                .default_value("conventional")
+                .default_value("auto")
                 .validator(validate_increment_arg)
-                .help("major|minor|patch|conventional"),
+                .help("major|minor|patch|auto"),
         )
 }
 
@@ -58,7 +58,7 @@ pub fn exec(sub_matches: &ArgMatches) -> Result<()> {
         IncrementArg::MAJOR => repo.next_version(Increment::MAJOR),
         IncrementArg::MINOR => repo.next_version(Increment::MINOR),
         IncrementArg::PATCH => repo.next_version(Increment::PATCH),
-        IncrementArg::CONVENTIONAL => repo.automatic_next_version(),
+        IncrementArg::AUTO => repo.automatic_next_version(),
     };
 
     println!("{}", new_version?.to_string());
