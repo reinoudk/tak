@@ -6,11 +6,12 @@ Tagging helper.
 # show the next version
 
 USAGE:
-    tak next [increment]
+    tak next [FLAGS] [increment]
 
 FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
+    -h, --help         Prints help information
+        --no-prefix    disable 'v' prefix of versions
+    -V, --version      Prints version information
 
 ARGS:
     <increment>    major|minor|patch|auto [default: auto]

@@ -9,14 +9,19 @@ use crate::increment::Increment;
 
 pub struct SemanticRepository {
     repository: Repository,
+    prefix: String,
 }
 
 impl SemanticRepository {
     pub fn open() -> Result<Self> {
+        Self::open_with_prefix( "")
+    }
+
+    pub fn open_with_prefix(prefix: &str) -> Result<Self> {
         let dir = std::env::current_dir()?;
         let repository = Repository::open(dir)?;
 
-        Ok(Self { repository })
+        Ok(Self { repository, prefix: prefix.to_string() })
     }
 
     pub fn highest_version(&self) -> Result<Version> {
@@ -26,6 +31,7 @@ impl SemanticRepository {
             .tag_names(None)?
             .iter()
             .filter_map(|s| s)
+            .filter_map(|s| s.strip_prefix(&self.prefix))
             .filter_map(|s| Version::parse(s).ok())
             .fold(
                 initial_version,
@@ -39,7 +45,7 @@ impl SemanticRepository {
 
     fn commits_since(&self, version: Version) -> Result<Vec<Commit>> {
         let mut walk = self.repository.revwalk()?;
-        walk.push_range(&format!("{}..HEAD", version))?;
+        walk.push_range(&format!("{}{}..HEAD", &self.prefix, version))?;
         let commits: Vec<Commit> = walk
             .filter_map(std::result::Result::ok)
             .filter_map(|oid| {

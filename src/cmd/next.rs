@@ -8,6 +8,7 @@ use tak::increment::Increment;
 
 pub const CMD_NAME: &'static str = "next";
 pub const INCREMENT_ARG_NAME: &'static str = "increment";
+pub const NO_PREFIX_ARG_NAME: &'static str = "no-prefix";
 
 enum IncrementArg {
     PATCH,
@@ -41,6 +42,12 @@ pub fn cmd<'a, 'b>() -> App<'a, 'b> {
                 .validator(validate_increment_arg)
                 .help("major|minor|patch|auto"),
         )
+        .arg(
+            Arg::with_name(NO_PREFIX_ARG_NAME)
+                .long("no-prefix")
+                .help("disable 'v' prefix of versions"),
+
+        )
 }
 
 fn validate_increment_arg(s: String) -> std::result::Result<(), String> {
@@ -52,7 +59,9 @@ pub fn exec(sub_matches: &ArgMatches) -> Result<()> {
     let increment_arg = sub_matches.value_of(INCREMENT_ARG_NAME).unwrap();
     let increment = IncrementArg::try_from(increment_arg).unwrap();
 
-    let repo = SemanticRepository::open()?;
+    let prefix = if sub_matches.is_present(NO_PREFIX_ARG_NAME) { "" } else { "v" };
+
+    let repo = SemanticRepository::open_with_prefix(prefix)?;
 
     let new_version = match increment {
         IncrementArg::MAJOR => repo.next_version(Increment::MAJOR),
@@ -61,7 +70,7 @@ pub fn exec(sub_matches: &ArgMatches) -> Result<()> {
         IncrementArg::AUTO => repo.automatic_next_version(),
     };
 
-    println!("{}", new_version?.to_string());
+    println!("{}{}", prefix, new_version?.to_string());
     Ok(())
 }
 
