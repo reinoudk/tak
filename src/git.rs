@@ -80,4 +80,14 @@ impl SemanticRepository {
 
         self.next_version(increment)
     }
+
+    pub fn write_version(&self, prefix: &str, version: &Version) -> Result<()> {
+        let tag = format!("{}{}", prefix, version);
+        let head = self.repository.head()?.peel_to_commit()?;
+
+        self.repository
+            .tag_lightweight(&tag, head.as_object(), false)
+            .map(|_| ())
+            .map_err(Error::from)
+    }
 }

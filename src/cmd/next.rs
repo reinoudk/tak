@@ -21,6 +21,9 @@ pub struct NextOpts {
     /// Don't use the 'v' prefix
     #[clap(long, short)]
     no_prefix: bool,
+    /// Write back the tag
+    #[clap(long, short)]
+    write: bool,
 }
 
 pub fn exec(next: &NextOpts) -> Result<()> {
@@ -32,8 +35,12 @@ pub fn exec(next: &NextOpts) -> Result<()> {
         IncrementArg::MINOR => repo.next_version(Increment::MINOR),
         IncrementArg::PATCH => repo.next_version(Increment::PATCH),
         IncrementArg::AUTO => repo.automatic_next_version(),
-    };
+    }?;
 
-    println!("{}{}", prefix, new_version?.to_string());
+    if next.write {
+        repo.write_version(prefix, &new_version)?;
+    }
+
+    println!("{}{}", prefix, new_version.to_string());
     Ok(())
 }

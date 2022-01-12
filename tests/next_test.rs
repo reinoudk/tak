@@ -54,7 +54,42 @@ fn test_next_prefix() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn tmp_repository(tmp_dir: &TempDir, prefix: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
+#[test]
+fn test_write() -> Result<(), Box<dyn std::error::Error>> {
+    let tmp_dir = tempfile::tempdir_in(env::current_dir()?).unwrap();
+
+    tmp_repository(&tmp_dir, Some("v"))?;
+
+    let mut cmd = Command::cargo_bin("tak")?;
+    cmd.current_dir(tmp_dir.path());
+    cmd.arg("next");
+    cmd.arg("-w");
+    cmd.assert().success().stdout("v1.1.0\n");
+
+    let repo = match Repository::init(tmp_dir.path()) {
+        Ok(repo) => repo,
+        Err(e) => panic!("failed to init: {}", e),
+    };
+
+    let has_new_tag = repo.tag_names(None)?
+        .iter()
+        .filter_map(|t| t)
+        .inspect(|t| println!("Tag: {}", t))
+        .find(|s| *s == "v1.1.0")
+        .is_some();
+
+    assert!(has_new_tag);
+
+    // explicitly close tmp_dir so we are notified if it doesn't work
+    tmp_dir.close()?;
+
+    Ok(())
+}
+
+fn tmp_repository(
+    tmp_dir: &TempDir,
+    prefix: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let repo = match Repository::init(tmp_dir.path()) {
         Ok(repo) => repo,
         Err(e) => panic!("failed to init: {}", e),
