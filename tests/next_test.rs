@@ -71,7 +71,8 @@ fn test_write() -> Result<(), Box<dyn std::error::Error>> {
         Err(e) => panic!("failed to init: {}", e),
     };
 
-    let has_new_tag = repo.tag_names(None)?
+    let has_new_tag = repo
+        .tag_names(None)?
         .iter()
         .filter_map(|t| t)
         .inspect(|t| println!("Tag: {}", t))
@@ -111,9 +112,21 @@ fn tmp_repository(
     )?;
 
     // Only consider SemVer versions
-    repo.tag_lightweight(format!("{}1.0.0", prefix.unwrap_or_default()).as_str(), &repo.find_object(oid, None)?, false)?;
-    repo.tag_lightweight(format!("{}1.1", prefix.unwrap_or_default()).as_str(), &repo.find_object(oid, None)?, false)?;
-    repo.tag_lightweight(format!("{}2", prefix.unwrap_or_default()).as_str(), &repo.find_object(oid, None)?, false)?;
+    repo.tag_lightweight(
+        format!("{}1.0.0", prefix.unwrap_or_default()).as_str(),
+        &repo.find_object(oid, None)?,
+        false,
+    )?;
+    repo.tag_lightweight(
+        format!("{}1.1", prefix.unwrap_or_default()).as_str(),
+        &repo.find_object(oid, None)?,
+        false,
+    )?;
+    repo.tag_lightweight(
+        format!("{}2", prefix.unwrap_or_default()).as_str(),
+        &repo.find_object(oid, None)?,
+        false,
+    )?;
 
     // Check auto increment
     let mut index = repo.index()?;

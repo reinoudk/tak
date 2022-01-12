@@ -9,7 +9,7 @@ pub struct ConventionalCommit {
     change_type: String,
     scope: Option<String>,
     is_breaking: bool,
-    short_description: String
+    short_description: String,
 }
 
 impl FromStr for ConventionalCommit {
@@ -33,12 +33,13 @@ impl FromStr for ConventionalCommit {
             .unwrap();
         }
 
-        let commit : Result<Self, Self::Err>;
+        let commit: Result<Self, Self::Err>;
 
         if let Some(caps) = RE.captures(s) {
             let change_type = caps.name("change_type").unwrap().as_str().to_string();
             let scope = caps.name("scope").map(|s| s.as_str().to_string());
-            let breaking = caps.name("breaking").is_some() || caps.name("breaking_footer").is_some();
+            let breaking =
+                caps.name("breaking").is_some() || caps.name("breaking_footer").is_some();
             let short_description = caps.name("short_description").unwrap().as_str().to_string();
 
             commit = Ok(ConventionalCommit {
@@ -48,7 +49,9 @@ impl FromStr for ConventionalCommit {
                 short_description,
             });
         } else {
-            commit = Err(String::from("could not parse string into conventional commit"));
+            commit = Err(String::from(
+                "could not parse string into conventional commit",
+            ));
         }
 
         commit

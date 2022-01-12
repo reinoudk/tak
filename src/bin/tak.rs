@@ -19,9 +19,7 @@ fn main() {
     let opts: Opts = Opts::parse();
 
     if let Err(err) = match &opts.sub_cmd {
-        SubCommand::Next(next_opts) => {
-            next::exec(next_opts)
-        }
+        SubCommand::Next(next_opts) => next::exec(next_opts),
     } {
         eprintln!("Error: {}", err.to_string());
     }

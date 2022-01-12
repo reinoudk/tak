@@ -14,14 +14,17 @@ pub struct SemanticRepository {
 
 impl SemanticRepository {
     pub fn open() -> Result<Self> {
-        Self::open_with_prefix( "")
+        Self::open_with_prefix("")
     }
 
     pub fn open_with_prefix(prefix: &str) -> Result<Self> {
         let dir = std::env::current_dir()?;
         let repository = Repository::open(dir)?;
 
-        Ok(Self { repository, prefix: prefix.to_string() })
+        Ok(Self {
+            repository,
+            prefix: prefix.to_string(),
+        })
     }
 
     pub fn highest_version(&self) -> Result<Version> {
@@ -65,7 +68,7 @@ impl SemanticRepository {
             Increment::MAJOR => new_version.increment_major(),
             Increment::MINOR => new_version.increment_minor(),
             Increment::PATCH => new_version.increment_patch(),
-            Increment::NONE => return Err(Error::NoVersionChange)
+            Increment::NONE => return Err(Error::NoVersionChange),
         };
 
         Ok(new_version)
