@@ -1,0 +1,57 @@
+name: "tak"
+description: "Determine the next semantic version based on conventional commits"
+branding:
+  icon: "tag"
+  color: "blue"
+
+inputs:
+  increment:
+    description: "The type of version increment (patch, minor, major, auto)"
+    required: false
+    default: "auto"
+  no-prefix:
+    description: "Don't use the 'v' prefix"
+    required: false
+    default: "false"
+  write:
+    description: "Write the tag to the git repository"
+    required: false
+    default: "false"
+
+outputs:
+  version:
+    description: "The next version string (e.g. v1.2.3 or 1.2.3)"
+    value: ${{ steps.tak.outputs.version }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Cache tak binary
+      id: cache-tak
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/bin/tak
+        key: tak-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build tak
+      if: steps.cache-tak.outputs.cache-hit != 'true'
+      shell: bash
+      run: cargo install --path ${{ github.action_path }}
+
+    - name: Run tak
+      id: tak
+      shell: bash
+      run: |
+        ARGS="next ${{ inputs.increment }}"
+        if [ "${{ inputs.no-prefix }}" = "true" ]; then
+          ARGS="$ARGS --no-prefix"
+        fi
+        if [ "${{ inputs.write }}" = "true" ]; then
+          ARGS="$ARGS --write"
+        fi
+        VERSION=$(tak $ARGS)
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "Next version: $VERSION"
