@@ -1,0 +1,102 @@
+name: "tak"
+description: "Determine the next semantic version based on conventional commits"
+branding:
+  icon: "tag"
+  color: "blue"
+
+inputs:
+  increment:
+    description: "The type of version increment (patch, minor, major, auto)"
+    required: false
+    default: "auto"
+  no-prefix:
+    description: "Don't use the 'v' prefix"
+    required: false
+    default: "false"
+  write:
+    description: "Write the tag to the git repository"
+    required: false
+    default: "false"
+  tak-version:
+    description: "Version of tak to use (e.g. 'v0.4.1'). Defaults to latest release."
+    required: false
+    default: "latest"
+
+outputs:
+  version:
+    description: "The next version string (e.g. v1.2.3 or 1.2.3)"
+    value: ${{ steps.tak.outputs.version }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Determine target triple
+      id: target
+      shell: bash
+      run: |
+        case "${{ runner.os }}-${{ runner.arch }}" in
+          Linux-X64)   TARGET="x86_64-unknown-linux-gnu" ;;
+          Linux-ARM64) TARGET="aarch64-unknown-linux-gnu" ;;
+          macOS-X64)   TARGET="x86_64-apple-darwin" ;;
+          macOS-ARM64) TARGET="aarch64-apple-darwin" ;;
+          *)
+            echo "::error::Unsupported platform: ${{ runner.os }}-${{ runner.arch }}"
+            exit 1
+            ;;
+        esac
+        echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+
+    - name: Download tak binary
+      id: download
+      shell: bash
+      run: |
+        TAK_VERSION="${{ inputs.tak-version }}"
+        TARGET="${{ steps.target.outputs.target }}"
+        REPO="reinoudk/tak"
+
+        if [ "$TAK_VERSION" = "latest" ]; then
+          TAG=$(curl -sf "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name"' | cut -d'"' -f4)
+        else
+          TAG="$TAK_VERSION"
+        fi
+
+        if [ -n "$TAG" ]; then
+          URL="https://github.com/${REPO}/releases/download/${TAG}/tak-${TARGET}.tar.gz"
+          echo "Downloading tak ${TAG} for ${TARGET}..."
+          if curl -sfL "$URL" -o /tmp/tak.tar.gz; then
+            sudo tar xzf /tmp/tak.tar.gz -C /usr/local/bin
+            echo "downloaded=true" >> "$GITHUB_OUTPUT"
+            echo "Installed tak ${TAG} from release"
+            exit 0
+          fi
+          echo "::warning::Failed to download tak binary from release, falling back to build"
+        else
+          echo "::warning::No release found, falling back to build"
+        fi
+        echo "downloaded=false" >> "$GITHUB_OUTPUT"
+
+    - name: Install Rust toolchain
+      if: steps.download.outputs.downloaded != 'true'
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Build tak from source
+      if: steps.download.outputs.downloaded != 'true'
+      shell: bash
+      run: |
+        echo "Building tak from source..."
+        cargo install --path ${{ github.action_path }}
+
+    - name: Run tak
+      id: tak
+      shell: bash
+      run: |
+        ARGS="next ${{ inputs.increment }}"
+        if [ "${{ inputs.no-prefix }}" = "true" ]; then
+          ARGS="$ARGS --no-prefix"
+        fi
+        if [ "${{ inputs.write }}" = "true" ]; then
+          ARGS="$ARGS --write"
+        fi
+        VERSION=$(tak $ARGS)
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "Next version: $VERSION"
