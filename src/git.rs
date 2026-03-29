@@ -33,7 +33,7 @@ impl SemanticRepository {
         self.repository
             .tag_names(None)?
             .iter()
-            .filter_map(|s| s)
+            .flatten()
             .filter_map(|s| s.strip_prefix(&self.prefix))
             .filter_map(|s| Version::parse(s).ok())
             .fold(
@@ -46,14 +46,12 @@ impl SemanticRepository {
             .ok_or(Error::NoTagFound)
     }
 
-    fn commits_since(&self, version: Version) -> Result<Vec<Commit>> {
+    fn commits_since(&self, version: Version) -> Result<Vec<Commit<'_>>> {
         let mut walk = self.repository.revwalk()?;
         walk.push_range(&format!("{}{}..HEAD", &self.prefix, version))?;
         let commits: Vec<Commit> = walk
             .filter_map(std::result::Result::ok)
-            .filter_map(|oid| {
-                return self.repository.find_commit(oid).ok();
-            })
+            .filter_map(|oid| self.repository.find_commit(oid).ok())
             .collect();
 
         Ok(commits)
@@ -65,10 +63,10 @@ impl SemanticRepository {
         let mut new_version = current_version.clone();
 
         match increment {
-            Increment::MAJOR => new_version.increment_major(),
-            Increment::MINOR => new_version.increment_minor(),
-            Increment::PATCH => new_version.increment_patch(),
-            Increment::NONE => return Err(Error::NoVersionChange),
+            Increment::Major => new_version.increment_major(),
+            Increment::Minor => new_version.increment_minor(),
+            Increment::Patch => new_version.increment_patch(),
+            Increment::None => return Err(Error::NoVersionChange),
         };
 
         Ok(new_version)

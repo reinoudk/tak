@@ -6,17 +6,17 @@ use crate::increment::Increment;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum)]
 enum IncrementArg {
-    PATCH,
-    MINOR,
-    MAJOR,
-    AUTO,
+    Patch,
+    Minor,
+    Major,
+    Auto,
 }
 
 /// Determine the next version
 #[derive(Parser, Debug)]
 pub struct NextOpts {
     /// The type of version increment to use
-    #[clap(arg_enum, default_value_t = IncrementArg::AUTO)]
+    #[clap(arg_enum, default_value_t = IncrementArg::Auto)]
     increment: IncrementArg,
     /// Don't use the 'v' prefix
     #[clap(long, short)]
@@ -31,16 +31,16 @@ pub fn exec(next: &NextOpts) -> Result<()> {
     let repo = SemanticRepository::open_with_prefix(prefix)?;
 
     let new_version = match next.increment {
-        IncrementArg::MAJOR => repo.next_version(Increment::MAJOR),
-        IncrementArg::MINOR => repo.next_version(Increment::MINOR),
-        IncrementArg::PATCH => repo.next_version(Increment::PATCH),
-        IncrementArg::AUTO => repo.automatic_next_version(),
+        IncrementArg::Major => repo.next_version(Increment::Major),
+        IncrementArg::Minor => repo.next_version(Increment::Minor),
+        IncrementArg::Patch => repo.next_version(Increment::Patch),
+        IncrementArg::Auto => repo.automatic_next_version(),
     }?;
 
     if next.write {
         repo.write_version(prefix, &new_version)?;
     }
 
-    println!("{}{}", prefix, new_version.to_string());
+    println!("{}{}", prefix, new_version);
     Ok(())
 }

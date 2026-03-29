@@ -7,8 +7,10 @@ use crate::increment::Increment;
 
 pub struct ConventionalCommit {
     change_type: String,
+    #[allow(dead_code)]
     scope: Option<String>,
     is_breaking: bool,
+    #[allow(dead_code)]
     short_description: String,
 }
 
@@ -59,28 +61,27 @@ impl FromStr for ConventionalCommit {
 }
 
 pub fn max_semantic_increment<'a, I: Iterator<Item = &'a str>>(messages: I) -> Increment {
-    let increment = messages.fold(Increment::NONE, |acc, message| {
+    messages.fold(Increment::None, |acc, message| {
         let increment = semantic_increment(message);
 
         // return the biggest increment type
-        return cmp::max(acc, increment);
-    });
-    increment
+        cmp::max(acc, increment)
+    })
 }
 
 fn semantic_increment(message: &str) -> Increment {
-    let mut increment = Increment::NONE;
+    let mut increment = Increment::None;
 
     if let Ok(commit) = message.parse::<ConventionalCommit>() {
         if commit.is_breaking {
             // Increase major on breaking change
-            increment = Increment::MAJOR;
+            increment = Increment::Major;
         } else {
             // Use the value of type to determine increment
             increment = match commit.change_type.as_str() {
-                "fix" => Increment::PATCH,
-                "feat" => Increment::MINOR,
-                _ => Increment::NONE,
+                "fix" => Increment::Patch,
+                "feat" => Increment::Minor,
+                _ => Increment::None,
             }
         }
     }
@@ -106,37 +107,37 @@ mod tests {
         };
     }
 
-    test_semantic_increment!(fix_results_in_patch, "fix: description\n", Increment::PATCH);
+    test_semantic_increment!(fix_results_in_patch, "fix: description\n", Increment::Patch);
     test_semantic_increment!(
         feat_results_in_minor,
         "feat: description\n",
-        Increment::MINOR
+        Increment::Minor
     );
     test_semantic_increment!(
         exclamation_mark_results_in_major,
         "fix!: description\n",
-        Increment::MAJOR
+        Increment::Major
     );
     test_semantic_increment!(
         breaking_change_with_hyphen_in_footer_results_in_major,
         "fix: description\n\nBREAKING-CHANGE: ",
-        Increment::MAJOR
+        Increment::Major
     );
     test_semantic_increment!(
         breaking_change_without_hyphen_in_footer_results_in_major,
         "fix: description\n\nBREAKING CHANGE: ",
-        Increment::MAJOR
+        Increment::Major
     );
     test_semantic_increment!(
         breaking_change_in_footer_without_newline_results_in_major,
         "fix: description\nBREAKING-CHANGE: ",
-        Increment::MAJOR
+        Increment::Major
     );
     test_semantic_increment!(
         breaking_change_in_footer_after_body_results_in_major,
         "fix: description\nsome body\n\nonce told me\n\n\n\nBREAKING-CHANGE: ",
-        Increment::MAJOR
+        Increment::Major
     );
 
-    test_semantic_increment!(missing_space_causes_none, "fix:", Increment::NONE);
+    test_semantic_increment!(missing_space_causes_none, "fix:", Increment::None);
 }
